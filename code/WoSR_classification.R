@@ -29,7 +29,6 @@ set.seed(35)
 #============================================================================
 # load data
 #============================================================================
-
 # load all csv files into list
 f <- list.files("data/")
 dat <- lapply(f[endsWith(f, ".csv")], FUN = function(x){
@@ -39,10 +38,38 @@ dat <- lapply(f[endsWith(f, ".csv")], FUN = function(x){
 
 })
 names(dat) <- f
+dat.master <- dat$ExerciseHealthDataSet.csv
+
+#============================================================================
+# cleanse master data
+#============================================================================
+# remove user ID and timestamp variables
+dat.master <- dat.master[,-(1:5)]
+
+#============================================================================
+# create training and test datasets
+#============================================================================
+
+# get segment ID
+p <- createDataPartition(dat.master$classe, p=0.05, list=FALSE)
 
 # set train and test datafiles
-train <- dat$`pml-training.csv`
-test <- dat$`pml-testing.csv`
+train <- dat.master[-p,]
+test <- dat.master[p,]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # =====================================================================
