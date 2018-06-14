@@ -29,14 +29,13 @@ set.seed(35)
 #============================================================================
 # load data
 #============================================================================
-# list files in data respository
-f <- list.files("data/")
 
 # load all csv files into list
+f <- list.files("data/")
 dat <- lapply(f[endsWith(f, ".csv")], FUN = function(x){
   
   # load and process each csv file
-  tmp <- read.csv(paste0("data/", x), row.names = 1)
+  tmp <- read.csv(paste0("data/", x))
 
 })
 names(dat) <- f
