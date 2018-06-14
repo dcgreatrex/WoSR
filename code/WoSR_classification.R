@@ -4,17 +4,18 @@
 #' data from: http://groupware.les.inf.puc-rio.br/har
 #' department: Science and Enabling Units IT
 #' contacts: fruzsina.soltesz@astrazeneca.com; david.greatrex@astrazeneca.com
-#' Last modified: 13-06-2018
+#' Last modified: 14-06-2018
 #============================================================================
 
 #============================================================================
-# Set repository URL (ensure url points to local respository location)
+#' Set repository URL (ensure url points to local respository location)
 #============================================================================
 WoSR <- "C:/Users/kwsp220/Box Sync/projects/cambridge_team/conference/WoSR/WoSR"
 setwd(WoSR)
 
+
 #============================================================================
-# Environment and parameter setting
+#' Environment and parameter setting
 #============================================================================
 library(plyr)
 library(dplyr)
@@ -26,10 +27,26 @@ library(rattle)
 library(randomForest)
 set.seed(35)
 
+
 #============================================================================
-# load data
+#' custom functions
 #============================================================================
-# load all csv files into list
+basic_data_properties <- function(dat){
+  
+  return_table <- data.frame(row.names = 1:ncol(dat)
+                             ,id = names(dat)
+                             ,class = sapply(dat, class)
+                             ,na_count = sapply(dat
+                                                ,function(x){
+                                                  sum(length(which(is.na(x))))
+                                                }))
+  return(return_table)
+}
+
+
+#============================================================================
+#' load data
+#============================================================================
 f <- list.files("data/")
 dat <- lapply(f[endsWith(f, ".csv")], FUN = function(x){
   
@@ -38,24 +55,163 @@ dat <- lapply(f[endsWith(f, ".csv")], FUN = function(x){
 
 })
 names(dat) <- f
-dat.master <- dat$ExerciseHealthDataSet.csv
+dat_master <- dat$ExerciseHealthDataSet.csv
+
 
 #============================================================================
-# cleanse master data
+#' explore master data
 #============================================================================
-# remove user ID and timestamp variables
-dat.master <- dat.master[,-(1:5)]
+# table dimentions
+dim <- dim(dat_master)
+feature_count <- dim[2]
+
+# property table - dat_master
+properties_dat_master <- basic_data_properties(dat_master)
+
+
+#============================================================================
+#' cleanse master data
+#' remove user ID and timestamp variables
+#============================================================================
+dat_master <- dat_master[,-(1:6)]
+
 
 #============================================================================
 # create training and test datasets
 #============================================================================
+#' training and test splits
+partition <- createDataPartition(dat_master$classe, p=0.2, list=FALSE)
 
-# get segment ID
-p <- createDataPartition(dat.master$classe, p=0.05, list=FALSE)
+#' define train and test datafiles
+train <- dat_master[-partition,]
+test <- dat_master[partition,]
 
-# set train and test datafiles
-train <- dat.master[-p,]
-test <- dat.master[p,]
+#' check that master class distirbution is maintained in training selection
+ss_master <- table(dat_master['classe'])/nrow(dat_master)
+ss_train <- table(train['classe'])/nrow(train)
+if(all.equal(round(ss_master,4), round(ss_train, 4))){
+  print('Stratified sampling training selection: Successful')
+}else{
+  stop("Error: Training dataset has different class distribution to master: Aborting...")
+}
+
+
+#============================================================================
+# explore training dataset
+#============================================================================
+# property table - train
+properties_train <- basic_data_properties(train)
+
+# first 5 rows
+head(train)
+
+# unique classes in training set
+unique(properties_train$class)
+
+# note that some variables have #DIV/0! or "" rather than NA
+length(unique(train$kurtosis_yaw_belt))
+
+
+#============================================================================
+# prepare training dataset
+#============================================================================
+# change #DIV/0! or "" to NA
+train[ train == "#DIV/0!" | train == "" ]  <- NA
+
+# convert all features to numbers except class
+train[,-ncol(train)] <- as.data.frame(sapply(train[,-ncol(train)], as.numeric))
+basic_data_properties(train)
+
+# check how many NAs
+na_ratio <- as.numeric(apply(train, 2, FUN = function(x){ 
+    length(which(is.na(x)==TRUE)) / length(x) 
+  }))
+
+# plot NA ratio
+hist(na_ratio, breaks = 50
+     ,main = "Histogram of NA ratio"
+     ,xlab = "NA Ratio")
+
+# remove features where over 95% of rows are NA
+exclude <- which(na_ratio > 0.95)
+train <- train[,-exclude]
+dim(train)
+
+# check if there are any NAs remaining
+if(sum(basic_data_properties(train)$na_count == 0)){
+  print("NA removal: successful")
+}else{
+  stop("Unexpected NAs remain in dataframe. Aborting...")
+}
+
+# separate features (predictors) and outcome (labels)
+train.y <- train$classe
+train.x <- train[,-ncol(train)]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
